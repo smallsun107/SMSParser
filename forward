@@ -1,0 +1,19 @@
+#!/bin/sh
+
+if [ "$1" = "RECEIVED" ]; then
+  FROM=$(grep "^From:" "$2" | cut -d' ' -f2)
+  TMPFILE=$(mktemp)
+  awk '/^\s*$/{flag=1;next} flag' "$2" > "$TMPFILE"
+  DECODED=$(cat "$TMPFILE" | ./decode)
+  rm -f "$TMPFILE"
+  [ -z "$DECODED" ] && DECODED="(无内容或解码失败)"
+
+  (
+    echo "From: admin@inject.you"
+    echo "To: admin@inject.you"
+    echo "Subject: SMS (decoded) from $FROM"
+    echo "Content-Type: text/plain; charset=utf-8"
+    echo ""
+    echo "$DECODED"
+  ) | ssmtp -v admin@inject.you
+fi
